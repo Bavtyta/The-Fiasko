@@ -1,6 +1,7 @@
 package game
 
 import (
+	"TheFiaskoTest/internal/entity"
 	"TheFiaskoTest/internal/render"
 	"TheFiaskoTest/internal/world"
 
@@ -10,6 +11,7 @@ import (
 type Game struct {
 	world  *world.World
 	camera *render.Camera
+	player *entity.Player
 }
 
 func New() *Game {
@@ -18,7 +20,7 @@ func New() *Game {
 	// -------- Sky layer (Y, height, color) --------
 	skyLayer := world.NewSkyLayer(
 		1266, // top of screen
-		385,  // height
+		300,  // height
 		0.1,
 	)
 	w.AddLayer(skyLayer)
@@ -48,7 +50,7 @@ func New() *Game {
 	logLayer := world.NewLogLayer(
 		0,    // центр по X
 		-20,  // базовая высота Y
-		40,   // ширина сегмента
+		10,   // ширина сегмента
 		40,   // длина сегмента
 		2.0,  // скорость движения
 		20,   // количество сегментов
@@ -57,9 +59,12 @@ func New() *Game {
 	)
 	w.AddLayer(logLayer)
 
+	player := entity.NewPlayer(1266/2-50, 768-250, 100, 150)
+
 	return &Game{
 		world:  w,
 		camera: render.NewCamera(1266, 768),
+		player: player,
 	}
 }
 
@@ -70,6 +75,7 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.world.Draw(screen, g.camera)
+	g.player.Draw(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {

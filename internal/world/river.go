@@ -5,7 +5,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"TheFiaskoTest/internal/core"
 	"TheFiaskoTest/internal/entity"
 	"TheFiaskoTest/internal/render"
 )
@@ -60,49 +59,6 @@ func (r *RiverLayer) Update(ctx WorldContext) {
 
 func (r *RiverLayer) Draw(screen *ebiten.Image, cam *render.Camera, ctx WorldContext) {
 	for _, seg := range r.Segments {
-		r.drawFilledSegment(screen, seg, cam)
+		seg.Draw(screen, cam) // рисуем только контур
 	}
-}
-
-func (r *RiverLayer) drawFilledSegment(screen *ebiten.Image, seg *entity.Segment, cam *render.Camera) {
-	halfW := seg.Width / 2
-	nearZ := seg.NearZ
-	farZ := nearZ + seg.Length
-
-	yNear := seg.BaseY + seg.SlopeY*nearZ
-	yFar := seg.BaseY + seg.SlopeY*farZ
-
-	corners := []core.Vec3{
-		{X: seg.X - halfW, Y: yNear, Z: nearZ},
-		{X: seg.X + halfW, Y: yNear, Z: nearZ},
-		{X: seg.X + halfW + seg.SlopeX*seg.Length, Y: yFar, Z: farZ},
-		{X: seg.X - halfW + seg.SlopeX*seg.Length, Y: yFar, Z: farZ},
-	}
-
-	var pts [4]struct{ x, y float64 }
-	for i, c := range corners {
-		x, y, scale := render.Project(c, cam)
-		if scale <= 0 {
-			if i < 2 && nearZ <= 0 {
-				return
-			}
-			return
-		}
-		pts[i].x, pts[i].y = x, y
-	}
-
-	rc, gc, bc, ac := r.Color.RGBA()
-	rCol := float32(rc) / 65535
-	gCol := float32(gc) / 65535
-	bCol := float32(bc) / 65535
-	aCol := float32(ac) / 65535
-
-	vertices := []ebiten.Vertex{
-		{DstX: float32(pts[0].x), DstY: float32(pts[0].y), SrcX: 0, SrcY: 0, ColorR: rCol, ColorG: gCol, ColorB: bCol, ColorA: aCol},
-		{DstX: float32(pts[1].x), DstY: float32(pts[1].y), SrcX: 0, SrcY: 0, ColorR: rCol, ColorG: gCol, ColorB: bCol, ColorA: aCol},
-		{DstX: float32(pts[2].x), DstY: float32(pts[2].y), SrcX: 0, SrcY: 0, ColorR: rCol, ColorG: gCol, ColorB: bCol, ColorA: aCol},
-		{DstX: float32(pts[3].x), DstY: float32(pts[3].y), SrcX: 0, SrcY: 0, ColorR: rCol, ColorG: gCol, ColorB: bCol, ColorA: aCol},
-	}
-	indices := []uint16{0, 1, 2, 0, 2, 3}
-	screen.DrawTriangles(vertices, indices, r.emptyTex, nil)
 }
