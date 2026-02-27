@@ -41,12 +41,8 @@ func (t *TestPoint) Draw(screen *ebiten.Image, cam *render.Camera, ctx WorldCont
 	}
 
 	const baseSize = 10.0
-	const maxSize = 150.0
 
 	size := baseSize * scale
-	if size > maxSize {
-		size = maxSize
-	}
 
 	ebitenutil.DrawRect(screen, x-size/2, y-size/2, size, size, color.White)
 }
