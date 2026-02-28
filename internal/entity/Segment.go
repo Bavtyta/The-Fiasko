@@ -78,7 +78,10 @@ func (s *Segment) Draw(screen *ebiten.Image, cam *render.Camera) {
 			if i < 2 && nearZ <= 0 {
 				return
 			}
-			return
+			if scale <= 0 {
+				// дальний угол может быть сзади – пропускаем, но продолжаем
+				continue
+			}
 		}
 		screenCorners[i].x, screenCorners[i].y = x, y
 	}
