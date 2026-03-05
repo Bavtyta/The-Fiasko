@@ -6,18 +6,22 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"TheFiaskoTest/internal/config"
 	"TheFiaskoTest/internal/state"
 )
 
 func main() {
+	// Создаём конфигурацию игры
+	gameCfg := config.DefaultGameConfig()
+
 	// Создаём менеджер состояний с начальным состоянием Menu
-	manager := state.NewManager(nil) // временно nil
+	manager := state.NewManager(nil, gameCfg) // временно nil
 	menuState := state.NewMenuState(manager)
 	manager.ChangeState(menuState, nil)
 
 	game := &Game{manager: manager}
 
-	ebiten.SetWindowSize(1266, 768)
+	ebiten.SetWindowSize(gameCfg.ScreenWidth, gameCfg.ScreenHeight)
 	ebiten.SetWindowTitle("The Fiasko")
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
@@ -37,5 +41,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return 1266, 768
+	cfg := g.manager.GameConfig()
+	return cfg.ScreenWidth, cfg.ScreenHeight
 }

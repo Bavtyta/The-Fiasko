@@ -1,6 +1,7 @@
 package state
 
 import (
+	"TheFiaskoTest/internal/config"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -23,7 +24,10 @@ func NewMenuState(manager *Manager) *MenuState {
 func (m *MenuState) Update() error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 		// Переключаемся на игровое состояние
-		gameState := NewGameState(m.manager)
+		gameCfg := m.manager.GameConfig()
+		cameraCfg := config.DefaultCameraConfig()
+		physicsCfg := config.DefaultPhysicsConfig()
+		gameState := NewGameState(m.manager, gameCfg, cameraCfg, physicsCfg)
 		m.manager.ChangeState(gameState, nil)
 	}
 	return nil
@@ -31,8 +35,9 @@ func (m *MenuState) Update() error {
 
 func (m *MenuState) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0, 0, 0, 255})
-	ebitenutil.DebugPrintAt(screen, "THE FIASKO", 1266/2-50, 768/2-40)
-	ebitenutil.DebugPrintAt(screen, m.startText, 1266/2-70, 768/2)
+	cfg := m.manager.GameConfig()
+	ebitenutil.DebugPrintAt(screen, "THE FIASKO", cfg.ScreenWidth/2-50, cfg.ScreenHeight/2-40)
+	ebitenutil.DebugPrintAt(screen, m.startText, cfg.ScreenWidth/2-70, cfg.ScreenHeight/2)
 }
 
 func (m *MenuState) Enter(prevState State, data interface{}) {}
