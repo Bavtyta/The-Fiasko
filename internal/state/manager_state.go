@@ -1,16 +1,22 @@
 package state
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"TheFiaskoTest/internal/config"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 type Manager struct {
-	current State
-	next    State
-	data    interface{}
+	current    State
+	next       State
+	data       interface{}
+	gameConfig config.GameConfig
 }
 
-func NewManager(initial State) *Manager {
+func NewManager(initial State, gameCfg config.GameConfig) *Manager {
 	return &Manager{
-		current: initial,
+		current:    initial,
+		gameConfig: gameCfg,
 	}
 }
 
@@ -37,4 +43,9 @@ func (m *Manager) Draw(screen *ebiten.Image) {
 func (m *Manager) ChangeState(state State, data interface{}) {
 	m.next = state
 	m.data = data
+}
+
+// GameConfig возвращает конфигурацию игры
+func (m *Manager) GameConfig() config.GameConfig {
+	return m.gameConfig
 }
