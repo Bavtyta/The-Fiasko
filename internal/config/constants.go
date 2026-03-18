@@ -47,7 +47,7 @@ func DefaultGameConfig() GameConfig {
 	return GameConfig{
 		ScreenWidth:    1266,
 		ScreenHeight:   768,
-		DriftThreshold: 150.0,
+		DriftThreshold: 15.0,
 	}
 }
 

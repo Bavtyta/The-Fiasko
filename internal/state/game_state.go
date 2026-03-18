@@ -29,14 +29,12 @@ type GameState struct {
 func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.CameraConfig, physicsCfg config.PhysicsConfig) *GameState {
 	w := world.New(0.5)
 
-	// Создаём слои
 	skyLayer := world.NewSkyLayer(gameCfg.ScreenWidth, 300, 0.1)
 	w.AddLayer(skyLayer)
 
 	farBankLayer := world.NewFarBankLayer(300, 50)
 	w.AddLayer(farBankLayer)
 
-	// Бревно (твёрдая поверхность)
 	logLayer := world.NewSegmentLayer(
 		0, -20, 10, 40, 2.0, 20,
 		0.0, 0.30,
@@ -44,7 +42,6 @@ func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.
 	)
 	w.AddLayer(logLayer)
 
-	// Река (жидкость)
 	riverLayer := world.NewSegmentLayer(
 		0, -25, 2000, 40, 0.3, 20,
 		0.0, 0.25,
@@ -52,7 +49,6 @@ func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.
 	)
 	w.AddLayer(riverLayer)
 
-	// Игрок
 	player := entity.NewPlayer(w, entity.PlayerConfig{
 		StartX:       0,
 		StartZ:       50,
@@ -60,15 +56,15 @@ func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.
 		Height:       8.0,
 		BalanceSpeed: 0.2,
 		Physics:      physicsCfg,
+		MaxTiltAngle: 0.3,
 	})
 
-	// Слой баланса (UI-компонент, рендерится отдельно от world)
 	balanceBar := ui.NewBalanceBarLayer(
 		func() float64 { return player.Balance() },
 		func() float64 { return player.MaxBalance() },
 		func() bool { return player.IsFalling() },
-		float64(gameCfg.ScreenWidth), float64(gameCfg.ScreenHeight),
 	)
+
 	return &GameState{
 		manager:    manager,
 		world:      w,
@@ -84,7 +80,6 @@ func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.
 func (g *GameState) Update() error {
 	g.world.Update()
 
-	// Обработка дрейфа после порога
 	if g.score >= g.gameConfig.DriftThreshold {
 		if inpututil.IsKeyJustPressed(ebiten.KeyA) {
 			g.driftDir = -1
@@ -100,14 +95,12 @@ func (g *GameState) Update() error {
 	}
 	g.player.ApplyBalanceInput(effectiveDrift)
 
-	// Прыжок
 	if inpututil.IsKeyJustPressed(ebiten.KeyW) {
 		g.player.Jump(2.5)
 	}
 
 	g.player.Update(g.world)
 
-	// Начисление очков
 	if !g.player.IsFalling() {
 		tps := ebiten.ActualTPS()
 		if tps == 0 {
@@ -115,7 +108,6 @@ func (g *GameState) Update() error {
 		}
 		g.score += 10.0 / tps
 	} else {
-		// Если игрок упал, переходим в GameOver
 		gameOver := NewGameOverState(g.manager, g.score, g.gameConfig)
 		g.manager.ChangeState(gameOver, nil)
 	}
@@ -127,10 +119,10 @@ func (g *GameState) Draw(screen *ebiten.Image) {
 	g.world.Draw(screen, g.camera)
 	g.player.Draw(screen, g.camera, g.world)
 
-	// Рендерим UI отдельно от игрового мира
-	g.balanceBar.Draw(screen)
+	// Баланс-бар над игроком
+	g.balanceBar.Draw(screen, g.camera, g.player.TiltedUpperWorldPos())
 
-	// Отладочная информация (можно оставить)
+	// Отладочная информация
 	balanceText := fmt.Sprintf("Balance: %.2f / %.0f", g.player.Balance(), g.player.MaxBalance())
 	ebitenutil.DebugPrintAt(screen, balanceText, 10, 10)
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Score: %.0f", g.score), 10, 30)

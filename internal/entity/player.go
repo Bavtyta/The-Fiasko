@@ -2,6 +2,7 @@ package entity
 
 import (
 	"image/color"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -13,14 +14,13 @@ import (
 	"TheFiaskoTest/internal/world"
 )
 
-// PlayerConfig содержит параметры для создания игрока.
 type PlayerConfig struct {
 	StartX, StartZ, Width, Height float64
 	BalanceSpeed                  float64
 	Physics                       config.PhysicsConfig
+	MaxTiltAngle                  float64 // максимальный угол наклона в радианах
 }
 
-// Player представляет игрового персонажа в трёхмерном мире.
 type Player struct {
 	world        *world.World
 	position     core.Vec3
@@ -35,12 +35,10 @@ type Player struct {
 	balanceSpeed float64
 	isFalling    bool
 	physics      config.PhysicsConfig
+	maxTiltAngle float64
 }
 
-// NewPlayer создаёт игрока на основе конфигурации.
 func NewPlayer(world *world.World, cfg PlayerConfig) *Player {
-	// Начальная высота будет определена в первом Update через GetSurfaceAt,
-	// поэтому здесь можно временно установить 0.
 	return &Player{
 		world:        world,
 		position:     core.Vec3{X: cfg.StartX, Y: 0, Z: cfg.StartZ},
@@ -53,35 +51,21 @@ func NewPlayer(world *world.World, cfg PlayerConfig) *Player {
 		balanceSpeed: cfg.BalanceSpeed,
 		isFalling:    false,
 		physics:      cfg.Physics,
+		maxTiltAngle: cfg.MaxTiltAngle,
 	}
 }
 
-// Геттеры
-func (p *Player) Position() core.Vec3 { return p.position }
-func (p *Player) Width() float64      { return p.width }
-func (p *Player) Height() float64     { return p.height }
-func (p *Player) Color() color.Color  { return p.color }
-func (p *Player) Balance() float64    { return p.balance }
-func (p *Player) MaxBalance() float64 { return p.maxBalance }
-func (p *Player) IsFalling() bool     { return p.isFalling }
-func (p *Player) IsJumping() bool     { return p.isJumping }
-func (p *Player) GroundY() float64    { return p.groundY }
-
-// Update обновляет состояние игрока (прыжок, привязку к поверхности).
 func (p *Player) Update(ctx common.WorldContext) {
 	if p.isFalling {
 		return
 	}
-
-	// Получаем информацию о поверхности под игроком
 	z := p.position.Z
 	if height, surfaceType, ok := p.world.GetSurfaceAt(z); ok {
 		p.groundY = height
 		if surfaceType == world.SurfaceLiquid {
-			p.isFalling = true // падение в воду
+			p.isFalling = true
 		}
 	} else {
-		// Если нет поверхности (например, игрок улетел за пределы) — падение
 		p.isFalling = true
 	}
 
@@ -98,7 +82,6 @@ func (p *Player) Update(ctx common.WorldContext) {
 	}
 }
 
-// Jump инициирует прыжок, если игрок на земле.
 func (p *Player) Jump(initialVelocity float64) {
 	if !p.isJumping && p.position.Y <= p.groundY+0.01 {
 		p.isJumping = true
@@ -106,29 +89,6 @@ func (p *Player) Jump(initialVelocity float64) {
 	}
 }
 
-// Draw отрисовывает игрока с учётом камеры.
-func (p *Player) Draw(screen *ebiten.Image, cam *render.Camera, ctx common.WorldContext) {
-	// Корректируем позицию с учётом смещения мира
-	relative := p.position
-
-	bottom := core.Vec3{X: relative.X, Y: relative.Y, Z: relative.Z}
-	top := core.Vec3{X: relative.X, Y: relative.Y + p.height, Z: relative.Z}
-
-	bx, by, bScale := cam.Project(bottom)
-	_, ty, tScale := cam.Project(top)
-
-	if bScale <= 0 || tScale <= 0 {
-		return
-	}
-
-	scale := (bScale + tScale) / 2
-	screenWidth := p.width * scale
-	halfW := screenWidth / 2
-
-	ebitenutil.DrawRect(screen, bx-halfW, ty, screenWidth, by-ty, p.color)
-}
-
-// ApplyBalanceInput изменяет баланс в зависимости от направления дрейфа.
 func (p *Player) ApplyBalanceInput(driftDir int) {
 	if p.isFalling {
 		return
@@ -144,12 +104,106 @@ func (p *Player) ApplyBalanceInput(driftDir int) {
 	}
 }
 
+// Draw отрисовывает игрока с учётом наклона (вращение вокруг центра нижней стороны).
+func (p *Player) Draw(screen *ebiten.Image, cam *render.Camera, ctx common.WorldContext) {
+	if p.isFalling {
+		// TODO: анимация падения
+		return
+	}
+
+	factor := p.balance / p.maxBalance
+	if factor < -1 {
+		factor = -1
+	} else if factor > 1 {
+		factor = 1
+	}
+	theta := factor * p.maxTiltAngle // положительный угол — наклон вправо
+
+	halfW := p.width / 2
+	h := p.height
+
+	// Локальные координаты четырёх углов (центр нижней стороны в (0,0))
+	local := [][2]float64{
+		{-halfW, 0}, // левый нижний
+		{halfW, 0},  // правый нижний
+		{-halfW, h}, // левый верхний
+		{halfW, h},  // правый верхний
+	}
+
+	cosT := math.Cos(theta)
+	sinT := math.Sin(theta)
+
+	var worldPts [4]core.Vec3
+	for i, l := range local {
+		// Поворот по часовой стрелке
+		rx := l[0]*cosT + l[1]*sinT
+		ry := -l[0]*sinT + l[1]*cosT
+		worldPts[i] = core.Vec3{
+			X: p.position.X + rx,
+			Y: p.position.Y + ry,
+			Z: p.position.Z,
+		}
+	}
+
+	// Проецируем на экран
+	var screenPts [4][2]float64
+	for i, wp := range worldPts {
+		sx, sy, scale := cam.Project(wp)
+		if scale <= 0 {
+			return // если хоть одна точка за камерой, не рисуем
+		}
+		screenPts[i] = [2]float64{sx, sy}
+	}
+
+	col := p.color
+	// Левый нижний -> правый нижний
+	ebitenutil.DrawLine(screen, screenPts[0][0], screenPts[0][1], screenPts[1][0], screenPts[1][1], col)
+	// Правый нижний -> правый верхний
+	ebitenutil.DrawLine(screen, screenPts[1][0], screenPts[1][1], screenPts[3][0], screenPts[3][1], col)
+	// Правый верхний -> левый верхний
+	ebitenutil.DrawLine(screen, screenPts[3][0], screenPts[3][1], screenPts[2][0], screenPts[2][1], col)
+	// Левый верхний -> левый нижний
+	ebitenutil.DrawLine(screen, screenPts[2][0], screenPts[2][1], screenPts[0][0], screenPts[0][1], col)
+}
+
+// TiltedUpperWorldPos возвращает мировые координаты центра верхней грани после наклона.
+// Используется для привязки баланс-бара.
+func (p *Player) TiltedUpperWorldPos() core.Vec3 {
+	factor := p.balance / p.maxBalance
+	if factor < -1 {
+		factor = -1
+	} else if factor > 1 {
+		factor = 1
+	}
+	theta := factor * p.maxTiltAngle
+	cosT := math.Cos(theta)
+	sinT := math.Sin(theta)
+	return core.Vec3{
+		X: p.position.X + p.height*sinT,
+		Y: p.position.Y + p.height*cosT,
+		Z: p.position.Z,
+	}
+}
+
+// UpperWorldPos возвращает центр верхней грани без наклона (если нужно).
+func (p *Player) UpperWorldPos() core.Vec3 {
+	return core.Vec3{
+		X: p.position.X,
+		Y: p.position.Y + p.height,
+		Z: p.position.Z,
+	}
+}
+
 // GetZ возвращает глубину для сортировки.
 func (p *Player) GetZ() float64 {
 	return p.position.Z
 }
 
-// SetZ устанавливает глубину.
 func (p *Player) SetZ(z float64) {
 	p.position.Z = z
 }
+
+func (p *Player) Balance() float64    { return p.balance }
+func (p *Player) MaxBalance() float64 { return p.maxBalance }
+func (p *Player) IsFalling() bool     { return p.isFalling }
+func (p *Player) Position() core.Vec3 { return p.position }
