@@ -35,11 +35,11 @@ func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.
 	farBankLayer := world.NewFarBankLayer(300, 50)
 	w.AddLayer(farBankLayer)
 
-	logLayer := world.NewSegmentLayer(
-		0, -20, 7, 40, 2.0, 20,
-		0.0, 0.30,
-		color.RGBA{139, 69, 19, 255}, world.SurfaceSolid,
-	)
+	logLayer := world.NewSegmentLayer(0, -20, 10, 40, 2.0, 20, 0.0, 0.30, color.RGBA{139, 69, 19, 255}, world.SurfaceSolid)
+	for _, seg := range logLayer.Segments() {
+		seg.SetHeight(seg.Width()) // делаем круглое сечение: высота = ширине
+		seg.SetRadialSegments(8)   // 8 граней для гладкости
+	}
 	w.AddLayer(logLayer)
 
 	riverLayer := world.NewSegmentLayer(

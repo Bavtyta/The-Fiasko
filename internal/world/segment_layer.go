@@ -28,6 +28,7 @@ type SegmentLayer struct {
 	width         float64
 	color         color.Color
 	surfaceType   SurfaceType
+	texture       *ebiten.Image
 }
 
 // Getters
@@ -104,6 +105,10 @@ func (l *SegmentLayer) SetSurfaceType(surfaceType SurfaceType) {
 	l.surfaceType = surfaceType
 }
 
+func (l *SegmentLayer) SetTexture(tex *ebiten.Image) {
+	l.texture = tex
+}
+
 // NewSegmentLayer создаёт новый слой сегментов.
 func NewSegmentLayer(baseX, baseY, width, segmentLength float64, speed float64, count int, slopeX, slopeY float64, col color.Color, surfaceType SurfaceType) *SegmentLayer {
 	segs := make([]*Segment, count)
@@ -143,7 +148,7 @@ func (l *SegmentLayer) Update(ctx common.WorldContext) {
 // Draw отрисовывает все сегменты слоя.
 func (l *SegmentLayer) Draw(screen *ebiten.Image, cam *render.Camera, ctx common.WorldContext) {
 	for _, seg := range l.segments {
-		seg.Draw(screen, cam)
+		seg.Draw(screen, cam, l.texture)
 	}
 }
 
