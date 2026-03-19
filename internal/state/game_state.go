@@ -36,7 +36,7 @@ func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.
 	w.AddLayer(farBankLayer)
 
 	logLayer := world.NewSegmentLayer(
-		0, -20, 10, 40, 2.0, 20,
+		0, -20, 7, 40, 2.0, 20,
 		0.0, 0.30,
 		color.RGBA{139, 69, 19, 255}, world.SurfaceSolid,
 	)
@@ -56,7 +56,7 @@ func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.
 		Height:       8.0,
 		BalanceSpeed: 0.2,
 		Physics:      physicsCfg,
-		MaxTiltAngle: 0.3,
+		MaxTiltAngle: 0.8,
 	})
 
 	balanceBar := ui.NewBalanceBarLayer(

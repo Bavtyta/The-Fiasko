@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
 	"TheFiaskoTest/internal/config"
 	"TheFiaskoTest/internal/state"
@@ -33,6 +34,9 @@ type Game struct {
 }
 
 func (g *Game) Update() error {
+	if inpututil.IsKeyJustPressed(ebiten.KeyZ) {
+		ebiten.SetFullscreen(!ebiten.IsFullscreen())
+	}
 	return g.manager.Update()
 }
 
