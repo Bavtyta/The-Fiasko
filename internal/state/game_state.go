@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
+	"TheFiaskoTest/internal/asset"
 	"TheFiaskoTest/internal/config"
 	"TheFiaskoTest/internal/entity"
 	"TheFiaskoTest/internal/render"
@@ -24,40 +25,60 @@ type GameState struct {
 	score      float64
 	driftDir   int // 1 - вправо, -1 - влево
 	gameConfig config.GameConfig
+	logTexture *ebiten.Image // Текстура бревна
 }
 
 func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.CameraConfig, physicsCfg config.PhysicsConfig) *GameState {
-	w := world.New(0.5)
+	w := world.New(50)
 
 	skyLayer := world.NewSkyLayer(gameCfg.ScreenWidth, 300, 0.1)
 	w.AddLayer(skyLayer)
 
-	farBankLayer := world.NewFarBankLayer(300, 50)
+	// Загружаем текстуру фона и создаём слой дальнего берега
+	backgroundTexture := asset.LoadBackgroundTexture()
+	farBankLayer := world.NewFarBankLayer(0, gameCfg.ScreenHeight, 0.2) // от 0 до высоты экрана
+	farBankLayer.SetTexture(backgroundTexture)
 	w.AddLayer(farBankLayer)
 
-	logLayer := world.NewSegmentLayer(0, -20, 10, 40, 2.0, 20, 0.0, 0.30, color.RGBA{139, 69, 19, 255}, world.SurfaceSolid)
-	for _, seg := range logLayer.Segments() {
-		seg.SetHeight(seg.Width()) // делаем круглое сечение: высота = ширине
-		seg.SetRadialSegments(8)   // 8 граней для гладкости
-	}
-	w.AddLayer(logLayer)
+	// Загружаем текстуру реки
+	riverTexture := asset.LoadRiverTexture()
 
 	riverLayer := world.NewSegmentLayer(
-		0, -25, 2000, 40, 0.3, 20,
+		0, -25, 2000, 100, 0.3, 20,
 		0.0, 0.25,
 		color.RGBA{0, 100, 255, 255}, world.SurfaceLiquid,
 	)
+	riverLayer.SetTexture(riverTexture) // Устанавливаем текстуру для реки
 	w.AddLayer(riverLayer)
+
+	// Загружаем текстуру бревна
+	logTexture := asset.LoadLogTexture()
+
+	logLayer := world.NewSegmentLayer(0, -20, 10, 40, 1.0, 20, 0.0, 0.30, color.RGBA{139, 69, 19, 255}, world.SurfaceSolid)
+	logLayer.SetTexture(logTexture) // Устанавливаем текстуру для слоя
+	for _, seg := range logLayer.Segments() {
+		seg.SetHeight(seg.Width())
+		seg.SetRadialSegments(16)
+	}
+	w.AddLayer(logLayer)
 
 	player := entity.NewPlayer(w, entity.PlayerConfig{
 		StartX:       0,
 		StartZ:       50,
-		Width:        4.0,
-		Height:       8.0,
+		Width:        20.0,
+		Height:       16.0,
 		BalanceSpeed: 0.2,
 		Physics:      physicsCfg,
 		MaxTiltAngle: 0.8,
 	})
+
+	// Загружаем и устанавливаем текстуры игрока
+	playerTexture := asset.LoadPlayerTexture()
+	playerTextureRight := asset.LoadPlayerTextureRight()
+	playerTextureJump := asset.LoadPlayerTextureJump()
+	player.SetTexture(playerTexture)
+	player.SetTextureRight(playerTextureRight)
+	player.SetTextureJump(playerTextureJump)
 
 	balanceBar := ui.NewBalanceBarLayer(
 		func() float64 { return player.Balance() },
@@ -74,11 +95,16 @@ func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.
 		score:      0,
 		driftDir:   1,
 		gameConfig: gameCfg,
+		logTexture: logTexture,
 	}
 }
 
 func (g *GameState) Update() error {
-	g.world.Update()
+	delta := 1.0 / ebiten.ActualTPS()
+	if delta == 0 {
+		delta = 1.0 / 60
+	}
+	g.world.Update(delta)
 
 	if g.score >= g.gameConfig.DriftThreshold {
 		if inpututil.IsKeyJustPressed(ebiten.KeyA) {
@@ -96,10 +122,12 @@ func (g *GameState) Update() error {
 	g.player.ApplyBalanceInput(effectiveDrift)
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyW) {
-		g.player.Jump(2.5)
+		g.player.Jump(2.3)
 	}
 
 	g.player.Update(g.world)
+
+	// Проверка столкновений с препятствиями
 
 	if !g.player.IsFalling() {
 		tps := ebiten.ActualTPS()

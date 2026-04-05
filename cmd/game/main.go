@@ -15,10 +15,10 @@ func main() {
 	// Создаём конфигурацию игры
 	gameCfg := config.DefaultGameConfig()
 
-	// Создаём менеджер состояний с начальным состоянием Menu
+	// Создаём менеджер состояний с начальным состоянием MainMenu
 	manager := state.NewManager(nil, gameCfg) // временно nil
-	menuState := state.NewMenuState(manager)
-	manager.ChangeState(menuState, nil)
+	mainMenuState := state.NewMainMenuState(manager, gameCfg)
+	manager.ChangeState(mainMenuState, nil)
 
 	game := &Game{manager: manager}
 

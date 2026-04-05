@@ -11,11 +11,11 @@ import (
 )
 
 type SkyLayer struct {
-	offsetZ float64
-	speed   float64
-	width   int
-	height  int
-	color   color.Color
+	offsetZ        float64
+	parallaxFactor float64
+	width          int
+	height         int
+	color          color.Color
 }
 
 // Getters
@@ -23,8 +23,8 @@ func (s *SkyLayer) OffsetZ() float64 {
 	return s.offsetZ
 }
 
-func (s *SkyLayer) Speed() float64 {
-	return s.speed
+func (s *SkyLayer) ParallaxFactor() float64 {
+	return s.parallaxFactor
 }
 
 func (s *SkyLayer) Width() int {
@@ -44,8 +44,11 @@ func (s *SkyLayer) SetOffsetZ(offsetZ float64) {
 	s.offsetZ = offsetZ
 }
 
-func (s *SkyLayer) SetSpeed(speed float64) {
-	s.speed = speed
+func (s *SkyLayer) SetParallaxFactor(parallaxFactor float64) {
+	if parallaxFactor < 0 {
+		parallaxFactor = 0.0
+	}
+	s.parallaxFactor = parallaxFactor
 }
 
 func (s *SkyLayer) SetWidth(width int) {
@@ -60,18 +63,19 @@ func (s *SkyLayer) SetColor(c color.Color) {
 	s.color = c
 }
 
-func NewSkyLayer(width, height int, speed float64) *SkyLayer {
+func NewSkyLayer(width, height int, parallaxFactor float64) *SkyLayer {
 	return &SkyLayer{
-		offsetZ: 0,
-		speed:   speed,
-		width:   width,
-		height:  height,
-		color:   color.RGBA{135, 206, 235, 255},
+		offsetZ:        0,
+		parallaxFactor: parallaxFactor,
+		width:          width,
+		height:         height,
+		color:          color.RGBA{135, 206, 235, 255},
 	}
 }
 
-func (s *SkyLayer) Update(ctx common.WorldContext) {
-	s.offsetZ += s.speed
+func (s *SkyLayer) Update(ctx common.WorldContext, delta float64) {
+	effectiveSpeed := ctx.GetSpeed() * s.parallaxFactor
+	s.offsetZ += effectiveSpeed * delta
 	if s.offsetZ > 1000 {
 		s.offsetZ -= 1000
 	}

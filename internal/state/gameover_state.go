@@ -34,9 +34,9 @@ func (g *GameOverState) Update() error {
 		g.manager.ChangeState(gameState, nil)
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		// Выход в меню
-		menuState := NewMenuState(g.manager)
-		g.manager.ChangeState(menuState, nil)
+		// Выход в главное меню
+		mainMenuState := NewMainMenuState(g.manager, g.gameConfig)
+		g.manager.ChangeState(mainMenuState, nil)
 	}
 	return nil
 }

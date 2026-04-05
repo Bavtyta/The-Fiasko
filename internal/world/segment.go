@@ -46,8 +46,8 @@ func (s *Segment) SetSlope(slopeX, slopeY float64) {
 	s.slopeY = slopeY
 }
 
-func (s *Segment) Update(speed float64) {
-	s.nearZ -= speed
+func (s *Segment) Update(speed float64, delta float64) {
+	s.nearZ -= speed * delta
 }
 
 func (s *Segment) IsBehindCamera() bool {
@@ -99,14 +99,34 @@ func (s *Segment) drawFlat(screen *ebiten.Image, cam *render.Camera, texture *eb
 		screenCorners[i].x, screenCorners[i].y = x, y
 	}
 
-	// Рисуем контур (позже заменим на текстуру)
-	col := s.color
-	for i := 0; i < 4; i++ {
-		next := (i + 1) % 4
-		ebitenutil.DrawLine(screen,
-			screenCorners[i].x, screenCorners[i].y,
-			screenCorners[next].x, screenCorners[next].y,
-			col)
+	// Если есть текстура, рисуем с текстурой
+	if texture != nil {
+		bounds := texture.Bounds()
+		texW := float32(bounds.Dx())
+		texH := float32(bounds.Dy())
+
+		// Создаём вершины для двух треугольников (прямоугольник)
+		vertices := []ebiten.Vertex{
+			{DstX: float32(screenCorners[0].x), DstY: float32(screenCorners[0].y), SrcX: 0, SrcY: 0, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},       // левый ближний
+			{DstX: float32(screenCorners[1].x), DstY: float32(screenCorners[1].y), SrcX: texW, SrcY: 0, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},    // правый ближний
+			{DstX: float32(screenCorners[2].x), DstY: float32(screenCorners[2].y), SrcX: texW, SrcY: texH, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1}, // правый дальний
+			{DstX: float32(screenCorners[3].x), DstY: float32(screenCorners[3].y), SrcX: 0, SrcY: texH, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},    // левый дальний
+		}
+		indices := []uint16{0, 1, 2, 0, 2, 3}
+		opts := &ebiten.DrawTrianglesOptions{
+			Filter: ebiten.FilterLinear,
+		}
+		screen.DrawTriangles(vertices, indices, texture, opts)
+	} else {
+		// Рисуем контур (fallback)
+		col := s.color
+		for i := 0; i < 4; i++ {
+			next := (i + 1) % 4
+			ebitenutil.DrawLine(screen,
+				screenCorners[i].x, screenCorners[i].y,
+				screenCorners[next].x, screenCorners[next].y,
+				col)
+		}
 	}
 }
 
@@ -184,12 +204,20 @@ func (s *Segment) drawCylinder(screen *ebiten.Image, cam *render.Camera, texture
 		v2 := projFar[next]
 		v3 := projFar[i]
 
-		// Вершины для двух треугольников
+		// Получаем размеры текстуры
+		var texW, texH float32 = 1, 1
+		if texture != nil {
+			bounds := texture.Bounds()
+			texW = float32(bounds.Dx())
+			texH = float32(bounds.Dy())
+		}
+
+		// Вершины для двух треугольников с правильными текстурными координатами в пикселях
 		vertices := []ebiten.Vertex{
-			{DstX: float32(v0.x), DstY: float32(v0.y), SrcX: float32(v0.u), SrcY: float32(v0.v), ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},
-			{DstX: float32(v1.x), DstY: float32(v1.y), SrcX: float32(v1.u), SrcY: float32(v1.v), ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},
-			{DstX: float32(v2.x), DstY: float32(v2.y), SrcX: float32(v2.u), SrcY: float32(v2.v), ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},
-			{DstX: float32(v3.x), DstY: float32(v3.y), SrcX: float32(v3.u), SrcY: float32(v3.v), ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},
+			{DstX: float32(v0.x), DstY: float32(v0.y), SrcX: float32(v0.u) * texW, SrcY: float32(v0.v) * texH, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},
+			{DstX: float32(v1.x), DstY: float32(v1.y), SrcX: float32(v1.u) * texW, SrcY: float32(v1.v) * texH, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},
+			{DstX: float32(v2.x), DstY: float32(v2.y), SrcX: float32(v2.u) * texW, SrcY: float32(v2.v) * texH, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},
+			{DstX: float32(v3.x), DstY: float32(v3.y), SrcX: float32(v3.u) * texW, SrcY: float32(v3.v) * texH, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1},
 		}
 		indices := []uint16{0, 1, 2, 0, 2, 3}
 		opts := &ebiten.DrawTrianglesOptions{

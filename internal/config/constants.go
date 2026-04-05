@@ -54,6 +54,6 @@ func DefaultGameConfig() GameConfig {
 // DefaultPhysicsConfig возвращает конфигурацию физики по умолчанию
 func DefaultPhysicsConfig() PhysicsConfig {
 	return PhysicsConfig{
-		Gravity: 0.15,
+		Gravity: 0.17,
 	}
 }

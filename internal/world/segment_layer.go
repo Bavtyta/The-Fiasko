@@ -19,16 +19,16 @@ const (
 
 // SegmentLayer — слой, состоящий из повторяющихся сегментов (река, брёвна и т.п.).
 type SegmentLayer struct {
-	segments      []*Segment
-	speed         float64
-	segmentLength float64
-	segmentCount  int
-	baseX         float64
-	baseY         float64
-	width         float64
-	color         color.Color
-	surfaceType   SurfaceType
-	texture       *ebiten.Image
+	segments       []*Segment
+	parallaxFactor float64
+	segmentLength  float64
+	segmentCount   int
+	baseX          float64
+	baseY          float64
+	width          float64
+	color          color.Color
+	surfaceType    SurfaceType
+	texture        *ebiten.Image
 }
 
 // Getters
@@ -36,8 +36,8 @@ func (l *SegmentLayer) Segments() []*Segment {
 	return l.segments
 }
 
-func (l *SegmentLayer) Speed() float64 {
-	return l.speed
+func (l *SegmentLayer) ParallaxFactor() float64 {
+	return l.parallaxFactor
 }
 
 func (l *SegmentLayer) SegmentLength() float64 {
@@ -73,8 +73,11 @@ func (l *SegmentLayer) SetSegments(segments []*Segment) {
 	l.segments = segments
 }
 
-func (l *SegmentLayer) SetSpeed(speed float64) {
-	l.speed = speed
+func (l *SegmentLayer) SetParallaxFactor(parallaxFactor float64) {
+	if parallaxFactor < 0 {
+		parallaxFactor = 0.0
+	}
+	l.parallaxFactor = parallaxFactor
 }
 
 func (l *SegmentLayer) SetSegmentLength(segmentLength float64) {
@@ -110,7 +113,7 @@ func (l *SegmentLayer) SetTexture(tex *ebiten.Image) {
 }
 
 // NewSegmentLayer создаёт новый слой сегментов.
-func NewSegmentLayer(baseX, baseY, width, segmentLength float64, speed float64, count int, slopeX, slopeY float64, col color.Color, surfaceType SurfaceType) *SegmentLayer {
+func NewSegmentLayer(baseX, baseY, width, segmentLength float64, parallaxFactor float64, count int, slopeX, slopeY float64, col color.Color, surfaceType SurfaceType) *SegmentLayer {
 	segs := make([]*Segment, count)
 	for i := 0; i < count; i++ {
 		nearZ := float64(i) * segmentLength
@@ -120,24 +123,27 @@ func NewSegmentLayer(baseX, baseY, width, segmentLength float64, speed float64, 
 		segs[i] = seg
 	}
 	return &SegmentLayer{
-		segments:      segs,
-		speed:         speed,
-		segmentLength: segmentLength,
-		segmentCount:  count,
-		baseX:         baseX,
-		baseY:         baseY,
-		width:         width,
-		color:         col,
-		surfaceType:   surfaceType,
+		segments:       segs,
+		parallaxFactor: parallaxFactor,
+		segmentLength:  segmentLength,
+		segmentCount:   count,
+		baseX:          baseX,
+		baseY:          baseY,
+		width:          width,
+		color:          col,
+		surfaceType:    surfaceType,
 	}
 }
 
 // Update обновляет позиции сегментов и переставляет ушедшие за камеру.
-func (l *SegmentLayer) Update(ctx common.WorldContext) {
+func (l *SegmentLayer) Update(ctx common.WorldContext, delta float64) {
+	effectiveSpeed := ctx.GetSpeed() * l.parallaxFactor
 	totalLength := l.segmentLength * float64(l.segmentCount)
 	for _, seg := range l.segments {
-		seg.Update(l.speed)
+		seg.Update(effectiveSpeed, delta)
 	}
+
+	// Переставляем первый сегмент только когда второй сегмент тоже ушёл за камеру
 	if len(l.segments) > 0 && l.segments[0].IsBehindCamera() {
 		first := l.segments[0]
 		first.Wrap(totalLength)
@@ -157,10 +163,23 @@ func (l *SegmentLayer) Draw(screen *ebiten.Image, cam *render.Camera, ctx common
 func (l *SegmentLayer) SurfaceAt(z float64) (height float64, surfaceType SurfaceType, ok bool) {
 	for _, seg := range l.segments {
 		if z >= seg.NearZ() && z <= seg.NearZ()+seg.Length() {
-			// Высота в точке Z: baseY + slopeY * z
-			height = seg.BaseY() + seg.SlopeY()*z
-			return height, l.surfaceType, true
+			baseHeight := seg.BaseY() + seg.SlopeY()*z
+			if l.surfaceType == SurfaceSolid {
+				radius := seg.Width() / 2
+				return baseHeight + radius, l.surfaceType, true
+			}
+			return baseHeight, l.surfaceType, true
 		}
 	}
 	return 0, 0, false
+}
+
+// SegmentAt возвращает сегмент слоя, содержащий точку z, или nil.
+func (l *SegmentLayer) SegmentAt(z float64) *Segment {
+	for _, seg := range l.segments {
+		if z >= seg.NearZ() && z <= seg.NearZ()+seg.Length() {
+			return seg
+		}
+	}
+	return nil
 }
