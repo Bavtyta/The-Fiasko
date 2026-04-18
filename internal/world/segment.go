@@ -270,27 +270,6 @@ func (s *Segment) Color() color.Color {
 	return s.color
 }
 
-// Сеттеры для изменяемых полей
-func (s *Segment) SetNearZ(nearZ float64) {
-	s.nearZ = nearZ
-}
-
-func (s *Segment) SetBaseY(baseY float64) {
-	s.baseY = baseY
-}
-
-func (s *Segment) SetX(x float64) {
-	s.x = x
-}
-
-func (s *Segment) SetWidth(width float64) {
-	s.width = width
-}
-
-func (s *Segment) SetLength(length float64) {
-	s.length = length
-}
-
 func (s *Segment) SetColor(col color.Color) {
 	s.color = col
 }

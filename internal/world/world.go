@@ -155,16 +155,6 @@ func (w *World) Obstacles() []*Obstacle {
 func (w *World) GetSpeed() float64        { return w.speed }
 func (w *World) GetWorldOffsetZ() float64 { return w.worldOffsetZ }
 
-// Геттеры для всех полей
-func (w *World) Speed() float64        { return w.speed }
-func (w *World) WorldOffsetZ() float64 { return w.worldOffsetZ }
-func (w *World) Layers() []Layer       { return w.layers }
-
-// Сеттеры для изменяемых полей
-func (w *World) SetSpeed(speed float64)         { w.speed = speed }
-func (w *World) SetWorldOffsetZ(offset float64) { w.worldOffsetZ = offset }
-func (w *World) SetLayers(layers []Layer)       { w.layers = layers }
-
 // SurfaceInfo содержит информацию о поверхности в точке Z
 type SurfaceInfo struct {
 	Height  float64

@@ -28,6 +28,11 @@ func (v Vec3) MulScalar(t float64) Vec3 {
 	return Vec3{v.X * t, v.Y * t, v.Z * t}
 }
 
+// Scale масштабирует вектор на скаляр s (алиас для MulScalar).
+func (v Vec3) Scale(s float64) Vec3 {
+	return Vec3{X: v.X * s, Y: v.Y * s, Z: v.Z * s}
+}
+
 // Деление на скаляр: возвращает новый вектор, поделённый на t (проверка на ноль не выполняется).
 func (v Vec3) DivScalar(t float64) Vec3 {
 	return Vec3{v.X / t, v.Y / t, v.Z / t}

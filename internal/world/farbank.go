@@ -18,43 +18,6 @@ type FarBankLayer struct {
 	texture        *ebiten.Image // текстура фона
 }
 
-// Getters
-func (f *FarBankLayer) Y() int {
-	return f.y
-}
-
-func (f *FarBankLayer) Height() int {
-	return f.height
-}
-
-func (f *FarBankLayer) Color() color.Color {
-	return f.color
-}
-
-func (f *FarBankLayer) ParallaxFactor() float64 {
-	return f.parallaxFactor
-}
-
-// Setters
-func (f *FarBankLayer) SetY(y int) {
-	f.y = y
-}
-
-func (f *FarBankLayer) SetHeight(height int) {
-	f.height = height
-}
-
-func (f *FarBankLayer) SetColor(c color.Color) {
-	f.color = c
-}
-
-func (f *FarBankLayer) SetParallaxFactor(factor float64) {
-	if factor < 0 {
-		factor = 0
-	}
-	f.parallaxFactor = factor
-}
-
 // SetTexture устанавливает текстуру для дальнего берега
 func (f *FarBankLayer) SetTexture(texture *ebiten.Image) {
 	f.texture = texture
@@ -75,8 +38,6 @@ func NewFarBankLayer(y, height int, parallaxFactor float64) *FarBankLayer {
 }
 
 func (f *FarBankLayer) Update(ctx common.WorldContext, delta float64) {
-	// Дальний берег может иметь минимальное движение для эффекта параллакса
-	// effectiveSpeed := ctx.GetSpeed() * f.parallaxFactor * delta
 	// В текущей реализации дальний берег статичен
 }
 

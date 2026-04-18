@@ -62,28 +62,17 @@ func NewGameState(manager *Manager, gameCfg config.GameConfig, cameraCfg config.
 	}
 	w.AddLayer(logLayer)
 
-	player := entity.NewPlayer(w, entity.PlayerConfig{
-		StartX:       0,
-		StartZ:       50,
-		Width:        20.0,
-		Height:       16.0,
-		BalanceSpeed: 0.2,
-		Physics:      physicsCfg,
-		MaxTiltAngle: 0.8,
-	})
+	player := entity.NewPlayer(config.DefaultConfig())
 
-	// Загружаем и устанавливаем текстуры игрока
-	playerTexture := asset.LoadPlayerTexture()
-	playerTextureRight := asset.LoadPlayerTextureRight()
-	playerTextureJump := asset.LoadPlayerTextureJump()
-	player.SetTexture(playerTexture)
-	player.SetTextureRight(playerTextureRight)
-	player.SetTextureJump(playerTextureJump)
+	// Загружаем текстуры игрока (временно не используются в новой архитектуре)
+	_ = asset.LoadPlayerTexture()
+	_ = asset.LoadPlayerTextureRight()
+	_ = asset.LoadPlayerTextureJump()
 
 	balanceBar := ui.NewBalanceBarLayer(
-		func() float64 { return player.Balance() },
-		func() float64 { return player.MaxBalance() },
-		func() bool { return player.IsFalling() },
+		func() float64 { return player.Balance },
+		func() float64 { return config.DefaultConfig().MaxBalance },
+		func() bool { return false }, // TODO: implement IsFalling check
 	)
 
 	return &GameState{
@@ -119,17 +108,21 @@ func (g *GameState) Update() error {
 	if g.score >= g.gameConfig.DriftThreshold {
 		effectiveDrift = g.driftDir
 	}
-	g.player.ApplyBalanceInput(effectiveDrift)
+	// TODO: Apply balance input using new architecture
+	_ = effectiveDrift
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyW) {
-		g.player.Jump(2.3)
+		// TODO: Jump using new architecture
 	}
 
-	g.player.Update(g.world)
+	// TODO: Update player using new architecture
+	// g.player.Update(g.world)
 
 	// Проверка столкновений с препятствиями
 
-	if !g.player.IsFalling() {
+	// TODO: Check if player is falling using new architecture
+	isFalling := false
+	if !isFalling {
 		tps := ebiten.ActualTPS()
 		if tps == 0 {
 			tps = 60
@@ -145,13 +138,14 @@ func (g *GameState) Update() error {
 
 func (g *GameState) Draw(screen *ebiten.Image) {
 	g.world.Draw(screen, g.camera)
-	g.player.Draw(screen, g.camera, g.world)
+	// TODO: Draw player using new architecture
+	// g.player.Draw(screen, g.camera, g.world)
 
-	// Баланс-бар над игроком
-	g.balanceBar.Draw(screen, g.camera, g.player.TiltedUpperWorldPos())
+	// TODO: Draw balance bar using new architecture
+	// g.balanceBar.Draw(screen, g.camera, g.player.TiltedUpperWorldPos())
 
 	// Отладочная информация
-	balanceText := fmt.Sprintf("Balance: %.2f / %.0f", g.player.Balance(), g.player.MaxBalance())
+	balanceText := fmt.Sprintf("Balance: %.2f / %.0f", g.player.Balance, config.DefaultConfig().MaxBalance)
 	ebitenutil.DebugPrintAt(screen, balanceText, 10, 10)
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Score: %.0f", g.score), 10, 30)
 

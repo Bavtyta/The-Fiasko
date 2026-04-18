@@ -18,51 +18,6 @@ type SkyLayer struct {
 	color          color.Color
 }
 
-// Getters
-func (s *SkyLayer) OffsetZ() float64 {
-	return s.offsetZ
-}
-
-func (s *SkyLayer) ParallaxFactor() float64 {
-	return s.parallaxFactor
-}
-
-func (s *SkyLayer) Width() int {
-	return s.width
-}
-
-func (s *SkyLayer) Height() int {
-	return s.height
-}
-
-func (s *SkyLayer) Color() color.Color {
-	return s.color
-}
-
-// Setters
-func (s *SkyLayer) SetOffsetZ(offsetZ float64) {
-	s.offsetZ = offsetZ
-}
-
-func (s *SkyLayer) SetParallaxFactor(parallaxFactor float64) {
-	if parallaxFactor < 0 {
-		parallaxFactor = 0.0
-	}
-	s.parallaxFactor = parallaxFactor
-}
-
-func (s *SkyLayer) SetWidth(width int) {
-	s.width = width
-}
-
-func (s *SkyLayer) SetHeight(height int) {
-	s.height = height
-}
-
-func (s *SkyLayer) SetColor(c color.Color) {
-	s.color = c
-}
-
 func NewSkyLayer(width, height int, parallaxFactor float64) *SkyLayer {
 	return &SkyLayer{
 		offsetZ:        0,

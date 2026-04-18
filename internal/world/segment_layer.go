@@ -36,78 +36,11 @@ func (l *SegmentLayer) Segments() []*Segment {
 	return l.segments
 }
 
-func (l *SegmentLayer) ParallaxFactor() float64 {
-	return l.parallaxFactor
-}
-
-func (l *SegmentLayer) SegmentLength() float64 {
-	return l.segmentLength
-}
-
-func (l *SegmentLayer) SegmentCount() int {
-	return l.segmentCount
-}
-
-func (l *SegmentLayer) BaseX() float64 {
-	return l.baseX
-}
-
-func (l *SegmentLayer) BaseY() float64 {
-	return l.baseY
-}
-
-func (l *SegmentLayer) Width() float64 {
-	return l.width
-}
-
-func (l *SegmentLayer) Color() color.Color {
-	return l.color
-}
-
 func (l *SegmentLayer) SurfaceType() SurfaceType {
 	return l.surfaceType
 }
 
 // Setters
-func (l *SegmentLayer) SetSegments(segments []*Segment) {
-	l.segments = segments
-}
-
-func (l *SegmentLayer) SetParallaxFactor(parallaxFactor float64) {
-	if parallaxFactor < 0 {
-		parallaxFactor = 0.0
-	}
-	l.parallaxFactor = parallaxFactor
-}
-
-func (l *SegmentLayer) SetSegmentLength(segmentLength float64) {
-	l.segmentLength = segmentLength
-}
-
-func (l *SegmentLayer) SetSegmentCount(segmentCount int) {
-	l.segmentCount = segmentCount
-}
-
-func (l *SegmentLayer) SetBaseX(baseX float64) {
-	l.baseX = baseX
-}
-
-func (l *SegmentLayer) SetBaseY(baseY float64) {
-	l.baseY = baseY
-}
-
-func (l *SegmentLayer) SetWidth(width float64) {
-	l.width = width
-}
-
-func (l *SegmentLayer) SetColor(c color.Color) {
-	l.color = c
-}
-
-func (l *SegmentLayer) SetSurfaceType(surfaceType SurfaceType) {
-	l.surfaceType = surfaceType
-}
-
 func (l *SegmentLayer) SetTexture(tex *ebiten.Image) {
 	l.texture = tex
 }
